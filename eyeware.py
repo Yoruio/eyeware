@@ -7,16 +7,18 @@ import math
 import sys
 import cv2
 import numpy as np
+import imutils
+from Pedestrian_detection import *
 
 import adhawkapi
 import adhawkapi.frontend
 from adhawkapi import MarkerSequenceMode, PacketType
 
 
-MARKER_SIZE = 20  # Diameter in pixels of the gaze marker
+MARKER_SIZE = 5  # Diameter in pixels of the gaze marker
 MARKER_COLOR = (0, 250, 50)  # Colour of the gaze marker
 
-SECONDARY_MARKER_SIZE = 200
+SECONDARY_MARKER_SIZE = 20
 SECONDARY_MARKER_COLOR = (250, 0, 0, 64)
 
 
@@ -131,6 +133,14 @@ class GazeViewer():
         np_arr = np.frombuffer(image_buf, np.uint8)
         image = cv2.imdecode(np_arr, 1)
 
+        # Your code here
+        image = imutils.resize(image, width=640)
+        results = pedestrian_detection(image, model, layer_name,
+            personidz=LABELS.index("person"))
+
+        for res in results:
+            cv2.rectangle(image, (res[1][0],res[1][1]), (res[1][2],res[1][3]), (0, 255, 0), 2)
+
         image = cv2.putText(
             image,
             f"{self._gaze_coordinates[0]}, {self._gaze_coordinates[1]}",
@@ -142,11 +152,16 @@ class GazeViewer():
             cv2.LINE_AA  
         )
 
+
+        if not (math.isnan(self._gaze_coordinates[0]) or math.isnan(self._gaze_coordinates[1])):
+            fixed_gaze_coords = (int(self._gaze_coordinates[0]/1280 * 640), int(self._gaze_coordinates[1]/720 * 360))
+
+            cv2.circle(image, fixed_gaze_coords, MARKER_SIZE, MARKER_COLOR, 2)
+            cv2.circle(image, fixed_gaze_coords, SECONDARY_MARKER_SIZE, SECONDARY_MARKER_COLOR, 2)
+
         cv2.imshow("preview", image)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             self.close()
-
-        print(self._gaze_coordinates)
 
 
     def _handle_gaze_in_image_stream(self, _timestamp, gaze_img_x, gaze_img_y, *_args):

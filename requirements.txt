@@ -1,3 +1,5 @@
 adhawk
 opencv-contrib-python
 numpy
+imutils
+scipy

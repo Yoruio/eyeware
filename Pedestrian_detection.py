@@ -7,8 +7,6 @@ import imutils
 NMS_THRESHOLD=0.3
 MIN_CONFIDENCE=0.2
 
-
-
 def pedestrian_detection(image, model, layer_name, personidz=0):
 	(H, W) = image.shape[:2]
 	results = []
@@ -60,7 +58,6 @@ def pedestrian_detection(image, model, layer_name, personidz=0):
 	return results
 
 
-
 labelsPath = "coco.names"
 LABELS = open(labelsPath).read().strip().split("\n")
 
@@ -74,31 +71,4 @@ model.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
 '''
 
 layer_name = model.getLayerNames()
-print(str(layer_name))
-print(str( model.getUnconnectedOutLayers()))
 layer_name = [layer_name[i - 1] for i in model.getUnconnectedOutLayers()]
-cap = cv2.VideoCapture(0)
-writer = None
-
-while True:
-	(grabbed, image) = cap.read()
-
-	if not grabbed:
-		break
-	image = imutils.resize(image, width=600)
-	results = pedestrian_detection(image, model, layer_name,
-		personidz=LABELS.index("person"))
-
-	for res in results:
-		cv2.rectangle(image, (res[1][0],res[1][1]), (res[1][2],res[1][3]), (0, 255, 0), 2)
-
-	cv2.imshow("Detection",image)
-
-	key = cv2.waitKey(1)
-	if key == 27:
-		break
-
-cap.release()
-cv2.destroyAllWindows()
-
-

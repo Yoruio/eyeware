@@ -2,10 +2,13 @@ import numpy as np
 import cv2
 import os
 import imutils
-
+from Pedestrian_tracking import *
 
 NMS_THRESHOLD=0.3
 MIN_CONFIDENCE=0.2
+
+# initialize our centroid tracker and frame dimensions
+ct = CentroidTracker()
 
 def pedestrian_detection(image, model, layer_name, personidz=0):
 	(H, W) = image.shape[:2]
@@ -56,6 +59,7 @@ def pedestrian_detection(image, model, layer_name, personidz=0):
 			results.append(res)
 	# return the list of results
 	return results
+
 
 
 labelsPath = "coco.names"

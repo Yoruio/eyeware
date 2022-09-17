@@ -9,6 +9,7 @@ import cv2
 import numpy as np
 import imutils
 from Pedestrian_detection import *
+from Pedestrian_tracking import *
 
 import adhawkapi
 import adhawkapi.frontend
@@ -23,7 +24,7 @@ SECONDARY_MARKER_COLOR = (250, 0, 0, 64)
 
 
 FONT = cv2.FONT_HERSHEY_SIMPLEX
-FONT_SCALE = 1
+FONT_SCALE = 0.5
 TEXT_ORG = (50,50)
 TEXT_COLOR = (0,0,255)
 TEXT_THICKNESS = 2
@@ -112,6 +113,8 @@ class GazeViewer():
         # Initialize the gaze coordinates to dummy values for now
         self._gaze_coordinates = (0, 0)
 
+        self.ct = CentroidTracker()
+
     def closeEvent(self, event):
         '''
         Override of the window's close event. When the window closes, we want to ensure that we shut down the api
@@ -130,6 +133,7 @@ class GazeViewer():
 
     def _handle_video_stream(self, _gaze_timestamp, _frame_index, image_buf, _frame_timestamp):
         
+        rects = []
         np_arr = np.frombuffer(image_buf, np.uint8)
         image = cv2.imdecode(np_arr, 1)
 
@@ -139,7 +143,18 @@ class GazeViewer():
             personidz=LABELS.index("person"))
 
         for res in results:
+            rects.append(res)
             cv2.rectangle(image, (res[1][0],res[1][1]), (res[1][2],res[1][3]), (0, 255, 0), 2)
+
+        objects = self.ct.update(rects)
+        # loop over the tracked objects
+        for (objectID, centroid) in objects.items():
+            # draw both the ID of the object and the centroid of the
+            # object on the output frame
+            text = "ID {}".format(objectID)
+            cv2.putText(image, text, (centroid[0] - 10, centroid[1] - 10),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+            cv2.circle(image, (centroid[0], centroid[1]), 4, (0, 255, 0), -1)
 
         image = cv2.putText(
             image,
@@ -149,7 +164,7 @@ class GazeViewer():
             FONT_SCALE,
             TEXT_COLOR,
             TEXT_THICKNESS,
-            cv2.LINE_AA  
+            cv2.LINE_AA
         )
 
 

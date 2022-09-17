@@ -3,16 +3,12 @@ import cv2
 import os
 import imutils
 from Pedestrian_tracking import *
-import time
+
 NMS_THRESHOLD=0.3
 MIN_CONFIDENCE=0.2
 
-
 # initialize our centroid tracker and frame dimensions
 ct = CentroidTracker()
-
-
-
 
 def pedestrian_detection(image, model, layer_name, personidz=0):
 	(H, W) = image.shape[:2]
@@ -80,8 +76,7 @@ model.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
 
 layer_name = model.getLayerNames()
 layer_name = [layer_name[i - 1] for i in model.getUnconnectedOutLayers()]
-cap = cv2.VideoCapture(0)
-writer = None
+
 
 while True:
 

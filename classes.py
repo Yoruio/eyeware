@@ -5,22 +5,22 @@ CENTER_TRAFFIC_WIDTH_LIMIT = 50
 CENTER_OFFSET = 50
 
 class Label:
-    def __init__(self,name, type, rect):
-        self.name = name
+    def __init__(self,id, type, rect):
+        self.id = id
         self.rect = rect
 
 class Traffic:
-    def __init__(self, name, rect, is_seen, is_close, last_seen=0):
-        self.name = name
+    def __init__(self, id, rect, is_seen=False, is_close=False, last_seen=0):
+        self.id = id
         self.rect = rect
         self.is_seen = is_seen
         self.is_close = is_close
         self.last_seen = last_seen
         self.center = (self.rect.x + self.rect.width/2, self.rect.y - self.rect.height/2)
 
-    def is_trafic_seen(self, eye_track_coor):
+    def is_traffic_seen(self, eye_track_coor):
         # traffic that's seen can't be unseen
-        if self.is_seen or self.rect.contains(cv2.Point):
+        if self.is_seen or self.rect.contains(eye_track_coor):
             self.is_seen = True
         return self.is_seen
     
@@ -31,7 +31,7 @@ class Traffic:
             self.is_close = True
         
         # or if it's somewhat close but it's near the center
-        elif self.rect.width > CENTER_TRAFFIC_WIDTH_LIMIT and abs(self.center[0]) + abs(self.center[1]) < CENTER_OFFSET:
+        elif ((self.rect.width > CENTER_TRAFFIC_WIDTH_LIMIT) and (pow(self.center[0]),2 + pow(self.center[1]),2 < CENTER_OFFSET)):
             self.is_close = True
         
         else:

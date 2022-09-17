@@ -20,6 +20,13 @@ SECONDARY_MARKER_SIZE = 200
 SECONDARY_MARKER_COLOR = (250, 0, 0, 64)
 
 
+FONT = cv2.FONT_HERSHEY_SIMPLEX
+FONT_SCALE = 1
+TEXT_ORG = (50,50)
+TEXT_COLOR = (0,0,255)
+TEXT_THICKNESS = 2
+
+
 class Frontend:
     ''' Frontend communicating with the backend '''
 
@@ -112,6 +119,7 @@ class GazeViewer():
 
     def close(self):
         self.frontend.shutdown()
+        cv2.destroyAllWindows()
 
     @property
     def connected(self):
@@ -123,10 +131,22 @@ class GazeViewer():
         np_arr = np.frombuffer(image_buf, np.uint8)
         image = cv2.imdecode(np_arr, 1)
 
-        print(f"{len(image)} x {len(image[0])}")
+        image = cv2.putText(
+            image,
+            f"{self._gaze_coordinates[0]}, {self._gaze_coordinates[1]}",
+            TEXT_ORG,
+            FONT,
+            FONT_SCALE,
+            TEXT_COLOR,
+            TEXT_THICKNESS,
+            cv2.LINE_AA  
+        )
 
         cv2.imshow("preview", image)
-        cv2.waitKey(1)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            self.close()
+
+        print(self._gaze_coordinates)
 
 
     def _handle_gaze_in_image_stream(self, _timestamp, gaze_img_x, gaze_img_y, *_args):

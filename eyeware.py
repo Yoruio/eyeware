@@ -42,7 +42,7 @@ BB_COLOR = [
 
 CLOSE_WIDTH_THRESHOLD = 100
 
-ALERT_TIMER = 20
+ALERT_TIMER = 12
 
 class Frontend:
     ''' Frontend communicating with the backend '''
@@ -192,18 +192,6 @@ class GazeViewer():
                 playsound.playsound('sound/soundeffect.mp3', False)
         else:
             self.alert_timer = -1
-
-        image = cv2.putText(
-            image,
-            f"{self._gaze_coordinates[0]}, {self._gaze_coordinates[1]}",
-            TEXT_ORG,
-            FONT,
-            FONT_SCALE,
-            TEXT_COLOR,
-            TEXT_THICKNESS,
-            cv2.LINE_AA
-        )
-
 
         if not (math.isnan(self._gaze_coordinates[0]) or math.isnan(self._gaze_coordinates[1])):
             fixed_gaze_coords = (int(self._gaze_coordinates[0]/1280 * 640), int(self._gaze_coordinates[1]/720 * 360))

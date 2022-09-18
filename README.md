@@ -1,4 +1,4 @@
-#EyeWare
+# EyeWare
 
 ## Inspiration
 In 2019, close to 400 people in Canada died due to distracted drivers. They also cause an estimated $102.3 million worth of damages. While some modern cars have pedestrian collision avoidance systems, most drivers on the road lack the technology to audibly cue the driver if they may be distracted. We want to improve driver attentiveness and safety in high pedestrian areas such as crosswalks, parking lots, and residential areas. Our solution is more economical and easier to implement than installing a full suite of sensors and software onto an existing car, which makes it perfect for users who want peace of mind for themselves and their loved ones.

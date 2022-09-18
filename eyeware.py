@@ -41,7 +41,9 @@ BB_COLOR = [
     NOT_SEEN_CLOSE_COLOR
 ]
 
-CLOSE_WIDTH_THRESHOLD = 100
+CLOSE_WIDTH_THRESHOLD = 150
+
+ALERT_TIMER = 20
 
 class Frontend:
     ''' Frontend communicating with the backend '''
@@ -129,6 +131,8 @@ class GazeViewer():
 
         self.bounding_boxes = {}
 
+        self.alert_timer = -1
+
     def closeEvent(self, event):
         '''
         Override of the window's close event. When the window closes, we want to ensure that we shut down the api
@@ -162,18 +166,19 @@ class GazeViewer():
 
         objects = self.ct.update(results, self.bounding_boxes)
 
-        # alert = False
+        alert = False
         # loop over the tracked objects
         for (objectID, centroid) in objects.items():
             bounding_box = self.bounding_boxes[objectID]
 
+            # Check bounding box statuses
             if bounding_box.seen > 0:
                 if((bounding_box.rect[0] <= self._gaze_coordinates[0]/2 and self._gaze_coordinates[0]/2 <= bounding_box.rect[2] and
                     bounding_box.rect[1] <= self._gaze_coordinates[1]/2 and self._gaze_coordinates[1]/2 <= bounding_box.rect[3])):
                     bounding_box.seen = 0
                 elif (abs(bounding_box.rect[2]-bounding_box.rect[0]) > CLOSE_WIDTH_THRESHOLD):
                     bounding_box.seen = 2
-                    # alert = True
+                    alert = True
                 else:
                     bounding_box.seen = 1
                 
@@ -186,8 +191,12 @@ class GazeViewer():
                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
             cv2.circle(image, (centroid[0], centroid[1]), 4, (0, 255, 0), -1)
 
-        # if alert:
-        #     playsound.playsound('sound/soundeffect.mp3', False)
+        if alert:
+            self.alert_timer = (self.alert_timer + 1) % ALERT_TIMER
+            if self.alert_timer == 0:
+                playsound.playsound('sound/soundeffect.mp3', False)
+        else:
+            self.alert_timer = -1
 
         image = cv2.putText(
             image,

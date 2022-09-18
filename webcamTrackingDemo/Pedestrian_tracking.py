@@ -1,6 +1,7 @@
 from scipy.spatial import distance as dist
 from collections import OrderedDict
 import numpy as np
+import cv2 as cv2
 
 TRAFFIC_WIDTH_LIMIT = 120
 CENTER_TRAFFIC_WIDTH_LIMIT = 50
@@ -16,10 +17,15 @@ class Person:
 
     def is_person_seen(self, eye_track_coor):
         # traffic that's seen can't be unseen
-        if self.is_seen or self.rect.contains(eye_track_coor):
+
+        if self.is_seen:
+            return self.is_seen
+        elif ((eye_track_coor[0] >= self.rect[0]) and (eye_track_coor[0] <= self.rect[2]) and (eye_track_coor[1] >= self.rect[1]) and (eye_track_coor[1] <= self.rect[3])):
             self.is_seen = True
-        return self.is_seen
-    
+            return self.is_seen
+        else:
+            return False
+        
     def is_person_close(self):
         # if it's super close then it's close
         # 100 is arbritary
@@ -93,7 +99,7 @@ class CentroidTracker():
 		# centroids and register each of them
         if len(self.objects) == 0:
             for i in range(0, len(inputCentroids)):
-                self.register(inputCentroids[i], box)
+                self.register(inputCentroids[i], box[i])
 		# otherwise, are are currently tracking objects so we need to
 		# try to match the input centroids to existing object
 		# centroids

@@ -92,7 +92,6 @@ while True:
 
 	for res in results:
 		# rects.append(res
-		print(str(res))
 		cv2.rectangle(image, (res[1][0],res[1][1]), (res[1][2],res[1][3]), (0, 255, 0), 2)
 
 	objects = ct.update(results)

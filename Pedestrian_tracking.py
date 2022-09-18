@@ -1,6 +1,7 @@
 from scipy.spatial import distance as dist
 from collections import OrderedDict
 import numpy as np
+import cv2 as cv2
 
 TRAFFIC_WIDTH_LIMIT = 120
 CENTER_TRAFFIC_WIDTH_LIMIT = 50
@@ -16,10 +17,18 @@ class Person:
 
     def is_person_seen(self, eye_track_coor):
         # traffic that's seen can't be unseen
-        if self.is_seen or self.rect.contains(eye_track_coor):
-            self.is_seen = True
-        return self.is_seen
-    
+        # print (str(self.rect))
+        try:
+            if self.is_seen:
+                return self.is_seen
+            elif ((eye_track_coor[0] >= self.rect[0]) and (eye_track_coor[0] <= self.rect[2]) and (eye_track_coor[1] >= self.rect[1]) and (eye_track_coor[1] <= self.rect[3])):
+                self.is_seen = True
+                return self.is_seen
+            else:
+                return False
+        except:
+            return False
+        
     def is_person_close(self):
         # if it's super close then it's close
         # 100 is arbritary
@@ -64,10 +73,10 @@ class CentroidTracker():
         del self.disappeared[objectID]
     
     # rects: from ML
-    def update(self, rects):
+    def update(self, results):
 		# check to see if the list of input bounding box rectangles
 		# is empty
-        if len(rects) == 0:
+        if len(results) == 0:
 			# loop over any existing tracked objects and mark them
 			# as disappeared
             for objectID in list(self.disappeared.keys()):
@@ -81,14 +90,14 @@ class CentroidTracker():
 			# to update
             return self.objects
 		# initialize an array of input centroids for the current frame
-        inputCentroids = np.zeros((len(rects), 2), dtype="int")
-        box = []
+        inputCentroids = np.zeros((len(results), 2), dtype="int")
+        box = np.zeros((len(results), 4), dtype="int")
         
 		# loop over the bounding box rectangles
-        for (i,rect) in enumerate(rects):
+        for (i,result) in enumerate(results):
 			# use the bounding box coordinates to derive the centroid
-            box.append(rect[1])
-            inputCentroids[i] = rect[2]
+            box[i] = result[1]
+            inputCentroids[i] = result[2]
 		# if we are currently not tracking any objects take the input
 		# centroids and register each of them
         if len(self.objects) == 0:

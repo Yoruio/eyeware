@@ -8,7 +8,7 @@ import sys
 import cv2
 import numpy as np
 import imutils
-from playsound import playsound
+# from playsound import playsound
 import multiprocessing
 
 from Pedestrian_detection import *
@@ -159,19 +159,21 @@ class GazeViewer():
                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
             cv2.circle(image, (person.centroid[0], person.centroid[1]), 4, (0, 255, 0), -1)
 
+            #print ("rect" + str(person.rect[0]))
             # put seen / not seen logic here
+            print(f"RECT FUCK ME IN THE ASS: {str(person.rect)}")
             if (person.is_seen):
-                cv2.rectangle(image, (person.rect[1][0],person.rect[1][1]), (person.rect[1][2],person.rect[1][3]), (0, 255, 0), 2)
+                cv2.rectangle(image, (person.rect[0],person.rect[1]), (person.rect[2],person.rect[3]), (0, 255, 0), 2)
 
             elif (not person.is_person_seen(self._gaze_coordinates)):
                 if (person.is_person_close):
-                    cv2.rectangle(image, (person.rect[1][0],person.rect[1][1]), (person.rect[1][2],person.rect[1][3]), (255, 0, 0), 2) #R
+                    cv2.rectangle(image, (person.rect[0],person.rect[1]), (person.rect[2],person.rect[3]), (0, 0, 255), 2) #R
                     play_sound = True
                 else:
-                    cv2.rectangle(image, (person.rect[1][0],person.rect[1][1]), (person.rect[1][2],person.rect[1][3]), (255, 255, 0), 2)
+                    cv2.rectangle(image, (person.rect[0],person.rect[1]), (person.rect[2],person.rect[3]), (0, 255, 255), 2)
 
             else:
-                cv2.rectangle(image, (person.rect[1][0],person.rect[1][1]), (person.rect[1][2],person.rect[1][3]), (0, 255, 0), 2)
+                cv2.rectangle(image, (person.rect[0],person.rect[1]), (person.rect[2],person.rect[3]), (0, 255, 0), 2)
 
             
 
@@ -205,19 +207,19 @@ class GazeViewer():
     def _draw_gaze_marker(self, qt_img):
         pass
 
-def play_warning_sound():
-    p = multiprocessing.Process(target=playsound, args=("/sound/soundeffect.mp3",))
-    if (play_sound):
-        p.start()
-    else:
-        p.terminate()
+# def play_warning_sound():
+#     p = multiprocessing.Process(target=playsound, args=("/sound/soundeffect.mp3",))
+#     if (play_sound):
+#         p.start()
+#     else:
+#         p.terminate()
 
 
 
 def main():
     '''Main function'''
     main_window = GazeViewer()
-    play_warning_sound()
+    # play_warning_sound()
     try:
         print('Plug in your tracker and ensure AdHawk Backend is running.')
         while not main_window.connected:

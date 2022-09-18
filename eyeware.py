@@ -10,12 +10,11 @@ import numpy as np
 import imutils
 from Pedestrian_detection import *
 from Pedestrian_tracking import *
-from BoundingBox import BoundingBox
 import playsound
 
 import adhawkapi
 import adhawkapi.frontend
-from adhawkapi import MarkerSequenceMode, PacketType
+from adhawkapi import PacketType
 
 
 MARKER_SIZE = 5  # Diameter in pixels of the gaze marker
@@ -41,7 +40,7 @@ BB_COLOR = [
     NOT_SEEN_CLOSE_COLOR
 ]
 
-CLOSE_WIDTH_THRESHOLD = 150
+CLOSE_WIDTH_THRESHOLD = 100
 
 ALERT_TIMER = 20
 
@@ -160,10 +159,6 @@ class GazeViewer():
         results = pedestrian_detection(image, model, layer_name,
             personidz=LABELS.index("person"))
 
-        # for res in results:
-        #     rects.append(res)
-        #     cv2.rectangle(image, (res[1][0],res[1][1]), (res[1][2],res[1][3]), (0, 255, 0), 2)
-
         objects = self.ct.update(results, self.bounding_boxes)
 
         alert = False
@@ -186,7 +181,7 @@ class GazeViewer():
 
             # draw both the ID of the object and the centroid of the
             # object on the output frame
-            text = "ID {}".format(objectID)
+            text = "Person {}".format(objectID)
             cv2.putText(image, text, (centroid[0] - 10, centroid[1] - 10),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
             cv2.circle(image, (centroid[0], centroid[1]), 4, (0, 255, 0), -1)

@@ -10,6 +10,8 @@ import numpy as np
 import imutils
 from Pedestrian_detection import *
 from Pedestrian_tracking import *
+from BoundingBox import BoundingBox
+import playsound
 
 import adhawkapi
 import adhawkapi.frontend
@@ -29,6 +31,17 @@ TEXT_ORG = (50,50)
 TEXT_COLOR = (0,0,255)
 TEXT_THICKNESS = 2
 
+SEEN_COLOR = (0,255,0)
+NOT_SEEN_CLOSE_COLOR = (0, 0, 255)
+NOT_SEEN_FAR_COLOR = (0, 255, 255)
+
+BB_COLOR = [
+    SEEN_COLOR,
+    NOT_SEEN_FAR_COLOR,
+    NOT_SEEN_CLOSE_COLOR
+]
+
+CLOSE_WIDTH_THRESHOLD = 100
 
 class Frontend:
     ''' Frontend communicating with the backend '''
@@ -99,7 +112,6 @@ class Frontend:
 
 class GazeViewer():
     ''' Class for receiving and displaying the video stream '''
-
     def __init__(self):
         # Instantiate and start a video receiver with self._handle_video_stream as the handler for new frames
         self._video_receiver = adhawkapi.frontend.VideoReceiver()
@@ -114,6 +126,8 @@ class GazeViewer():
         self._gaze_coordinates = (0, 0)
 
         self.ct = CentroidTracker()
+
+        self.bounding_boxes = {}
 
     def closeEvent(self, event):
         '''
@@ -142,19 +156,38 @@ class GazeViewer():
         results = pedestrian_detection(image, model, layer_name,
             personidz=LABELS.index("person"))
 
-        for res in results:
-            rects.append(res)
-            cv2.rectangle(image, (res[1][0],res[1][1]), (res[1][2],res[1][3]), (0, 255, 0), 2)
+        # for res in results:
+        #     rects.append(res)
+        #     cv2.rectangle(image, (res[1][0],res[1][1]), (res[1][2],res[1][3]), (0, 255, 0), 2)
 
-        objects = self.ct.update(rects)
+        objects = self.ct.update(results, self.bounding_boxes)
+
+        # alert = False
         # loop over the tracked objects
         for (objectID, centroid) in objects.items():
+            bounding_box = self.bounding_boxes[objectID]
+
+            if bounding_box.seen > 0:
+                if((bounding_box.rect[0] <= self._gaze_coordinates[0]/2 and self._gaze_coordinates[0]/2 <= bounding_box.rect[2] and
+                    bounding_box.rect[1] <= self._gaze_coordinates[1]/2 and self._gaze_coordinates[1]/2 <= bounding_box.rect[3])):
+                    bounding_box.seen = 0
+                elif (abs(bounding_box.rect[2]-bounding_box.rect[0]) > CLOSE_WIDTH_THRESHOLD):
+                    bounding_box.seen = 2
+                    # alert = True
+                else:
+                    bounding_box.seen = 1
+                
+            cv2.rectangle(image, (bounding_box.rect[0], bounding_box.rect[1]), (bounding_box.rect[2], bounding_box.rect[3]), BB_COLOR[bounding_box.seen], 2)
+
             # draw both the ID of the object and the centroid of the
             # object on the output frame
             text = "ID {}".format(objectID)
             cv2.putText(image, text, (centroid[0] - 10, centroid[1] - 10),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
             cv2.circle(image, (centroid[0], centroid[1]), 4, (0, 255, 0), -1)
+
+        # if alert:
+        #     playsound.playsound('sound/soundeffect.mp3', False)
 
         image = cv2.putText(
             image,

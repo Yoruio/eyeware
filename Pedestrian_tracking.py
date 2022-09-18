@@ -1,11 +1,9 @@
-#SORT
-
-# import the necessary packages
+from BoundingBox import BoundingBox
 from scipy.spatial import distance as dist
 from collections import OrderedDict
 import numpy as np
 class CentroidTracker():
-    def __init__(self, maxDisappeared=50):
+    def __init__(self, maxDisappeared=25):
         # initialize the next unique object ID along with two ordered
         # dictionaries used to keep track of mapping a given object
         # ID to its centroid and number of consecutive frames it has
@@ -18,21 +16,26 @@ class CentroidTracker():
         # need to deregister the object from tracking
         self.maxDisappeared = maxDisappeared
 
-    def register(self, centroid):
+    def register(self, centroid, bounding_boxes, rect):
+        print(f"registering: {str(rect)}")
         # when registering an object we use the next available object
         # ID to store the centroid
         self.objects[self.nextObjectID] = centroid
         self.disappeared[self.nextObjectID] = 0
+        bounding_boxes[self.nextObjectID] = BoundingBox(rect, 1)
         self.nextObjectID += 1
+        
 
-    def deregister(self, objectID):
+    def deregister(self, objectID, bounding_boxes):
         # to deregister an object ID we delete the object ID from
         # both of our respective dictionaries
         del self.objects[objectID]
         del self.disappeared[objectID]
+        del bounding_boxes[objectID]
     
     # rects: from ML
-    def update(self, rects):
+    # bounding_boxes is dictionary of id -> BoundingBox
+    def update(self, rects, bounding_boxes):
 		# check to see if the list of input bounding box rectangles
 		# is empty
         if len(rects) == 0:
@@ -44,7 +47,7 @@ class CentroidTracker():
                 # frames where a given object has been marked as
                 # missing, deregister it
                 if self.disappeared[objectID] > self.maxDisappeared:
-                    self.deregister(objectID)
+                    self.deregister(objectID, bounding_boxes)
 			# return early as there are no centroids or tracking info
 			# to update
             return self.objects
@@ -58,7 +61,7 @@ class CentroidTracker():
 		# centroids and register each of them
         if len(self.objects) == 0:
             for i in range(0, len(inputCentroids)):
-                self.register(inputCentroids[i])
+                self.register(inputCentroids[i], bounding_boxes, rects[i][1])
 		# otherwise, are are currently tracking objects so we need to
 		# try to match the input centroids to existing object
 		# centroids
@@ -99,6 +102,8 @@ class CentroidTracker():
                 # counter
                 objectID = objectIDs[row]
                 self.objects[objectID] = inputCentroids[col]
+                if (rects[col][1][0] > 0 and rects[col][1][1] > 0 and rects[col][1][2] > 0 and rects[col][1][3] > 0):
+                    bounding_boxes[objectID].rect = rects[col][1]
                 self.disappeared[objectID] = 0
                 # indicate that we have examined each of the row and
                 # column indexes, respectively
@@ -123,12 +128,12 @@ class CentroidTracker():
                     # frames the object has been marked "disappeared"
                     # for warrants deregistering the object
                     if self.disappeared[objectID] > self.maxDisappeared:
-                        self.deregister(objectID)
+                        self.deregister(objectID, bounding_boxes)
             # otherwise, if the number of input centroids is greater
             # than the number of existing object centroids we need to
             # register each new input centroid as a trackable object
             else:
                 for col in unusedCols:
-                    self.register(inputCentroids[col])
+                    self.register(inputCentroids[col], bounding_boxes, rects[col][1])
         # return the set of trackable objects
         return self.objects

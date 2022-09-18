@@ -76,7 +76,7 @@ model.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
 
 layer_name = model.getLayerNames()
 layer_name = [layer_name[i - 1] for i in model.getUnconnectedOutLayers()]
-
+cap = cv2.VideoCapture(0)
 
 while True:
 
@@ -91,19 +91,19 @@ while True:
 		personidz=LABELS.index("person"))
 
 	for res in results:
-		rects.append(res)
+		# rects.append(res
+		print(str(res))
 		cv2.rectangle(image, (res[1][0],res[1][1]), (res[1][2],res[1][3]), (0, 255, 0), 2)
 
-	objects = ct.update(rects)
-	print("object id")
+	objects = ct.update(results)
 	# loop over the tracked objects
-	for (objectID, centroid) in objects.items():
+	for (objectID, person) in objects.items():
 		# draw both the ID of the object and the centroid of the
 		# object on the output frame
 		text = "ID {}".format(objectID)
-		cv2.putText(image, text, (centroid[0] - 10, centroid[1] - 10),
+		cv2.putText(image, text, (person.centroid[0] - 10, person.centroid[1] - 10),
 			cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-		cv2.circle(image, (centroid[0], centroid[1]), 4, (0, 255, 0), -1)
+		cv2.circle(image, (person.centroid[0], person.centroid[1]), 4, (0, 255, 0), -1)
 
 
 

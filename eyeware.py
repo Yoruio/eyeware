@@ -8,6 +8,9 @@ import sys
 import cv2
 import numpy as np
 import imutils
+from playsound import playsound
+import multiprocessing
+
 from Pedestrian_detection import *
 from Pedestrian_tracking import *
 
@@ -29,6 +32,8 @@ TEXT_ORG = (50,50)
 TEXT_COLOR = (0,0,255)
 TEXT_THICKNESS = 2
 
+
+play_sound = False
 
 class Frontend:
     ''' Frontend communicating with the backend '''
@@ -132,8 +137,6 @@ class GazeViewer():
         return self.frontend.connected
 
     def _handle_video_stream(self, _gaze_timestamp, _frame_index, image_buf, _frame_timestamp):
-        
-        rects = []
         np_arr = np.frombuffer(image_buf, np.uint8)
         image = cv2.imdecode(np_arr, 1)
 
@@ -141,20 +144,36 @@ class GazeViewer():
         image = imutils.resize(image, width=640)
         results = pedestrian_detection(image, model, layer_name,
             personidz=LABELS.index("person"))
-
-        for res in results:
-            rects.append(res)
-            cv2.rectangle(image, (res[1][0],res[1][1]), (res[1][2],res[1][3]), (0, 255, 0), 2)
-
-        objects = self.ct.update(rects)
+        
+        # for res in results:
+            # rects.append(res)
+            # cv2.rectangle(image, (res[1][0],res[1][1]), (res[1][2],res[1][3]), (0, 255, 0), 2)
+        play_sound = False
+        objects = self.ct.update(results)
         # loop over the tracked objects
-        for (objectID, centroid) in objects.items():
+        for (objectID, person) in objects.items():
             # draw both the ID of the object and the centroid of the
             # object on the output frame
             text = "ID {}".format(objectID)
-            cv2.putText(image, text, (centroid[0] - 10, centroid[1] - 10),
+            cv2.putText(image, text, (person.centroid[0] - 10, person.centroid[1] - 10),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-            cv2.circle(image, (centroid[0], centroid[1]), 4, (0, 255, 0), -1)
+            cv2.circle(image, (person.centroid[0], person.centroid[1]), 4, (0, 255, 0), -1)
+
+            # put seen / not seen logic here
+            if (person.is_seen):
+                cv2.rectangle(image, (person.rect[1][0],person.rect[1][1]), (person.rect[1][2],person.rect[1][3]), (0, 255, 0), 2)
+
+            elif (not person.is_person_seen(self._gaze_coordinates)):
+                if (person.is_person_close):
+                    cv2.rectangle(image, (person.rect[1][0],person.rect[1][1]), (person.rect[1][2],person.rect[1][3]), (255, 0, 0), 2) #R
+                    play_sound = True
+                else:
+                    cv2.rectangle(image, (person.rect[1][0],person.rect[1][1]), (person.rect[1][2],person.rect[1][3]), (255, 255, 0), 2)
+
+            else:
+                cv2.rectangle(image, (person.rect[1][0],person.rect[1][1]), (person.rect[1][2],person.rect[1][3]), (0, 255, 0), 2)
+
+            
 
         image = cv2.putText(
             image,
@@ -175,6 +194,7 @@ class GazeViewer():
             cv2.circle(image, fixed_gaze_coords, SECONDARY_MARKER_SIZE, SECONDARY_MARKER_COLOR, 2)
 
         cv2.imshow("preview", image)
+        
         if cv2.waitKey(1) & 0xFF == ord('q'):
             self.close()
 
@@ -185,10 +205,19 @@ class GazeViewer():
     def _draw_gaze_marker(self, qt_img):
         pass
 
+def play_warning_sound():
+    p = multiprocessing.Process(target=playsound, args=("/sound/soundeffect.mp3",))
+    if (play_sound):
+        p.start()
+    else:
+        p.terminate()
+
+
 
 def main():
     '''Main function'''
     main_window = GazeViewer()
+    play_warning_sound()
     try:
         print('Plug in your tracker and ensure AdHawk Backend is running.')
         while not main_window.connected:

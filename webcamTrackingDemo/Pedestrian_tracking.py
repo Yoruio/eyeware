@@ -1,9 +1,41 @@
-#SORT
-
-# import the necessary packages
 from scipy.spatial import distance as dist
 from collections import OrderedDict
 import numpy as np
+
+TRAFFIC_WIDTH_LIMIT = 120
+CENTER_TRAFFIC_WIDTH_LIMIT = 50
+CENTER_OFFSET = 50
+
+
+class Person:
+    def __init__(self, centroid, rect, is_seen=False, is_close=False):
+        self.is_seen = is_seen
+        self.is_close = is_close
+        self.centroid = centroid
+        self.rect = rect
+
+    def is_person_seen(self, eye_track_coor):
+        # traffic that's seen can't be unseen
+        if self.is_seen or self.rect.contains(eye_track_coor):
+            self.is_seen = True
+        return self.is_seen
+    
+    def is_person_close(self):
+        # if it's super close then it's close
+        # 100 is arbritary
+        if self.rect.width > TRAFFIC_WIDTH_LIMIT: 
+            self.is_close = True
+        
+        # or if it's somewhat close but it's near the center
+        elif ((self.rect.width > CENTER_TRAFFIC_WIDTH_LIMIT) and (pow(self.center[0]),2 + pow(self.center[1]),2 < CENTER_OFFSET)):
+            self.is_close = True
+        
+        else:
+            self.is_close = False
+        return self.is_close
+        
+
+
 class CentroidTracker():
     def __init__(self, maxDisappeared=50):
         # initialize the next unique object ID along with two ordered
@@ -18,10 +50,10 @@ class CentroidTracker():
         # need to deregister the object from tracking
         self.maxDisappeared = maxDisappeared
 
-    def register(self, centroid):
+    def register(self, centroid, rect):
         # when registering an object we use the next available object
         # ID to store the centroid
-        self.objects[self.nextObjectID] = centroid
+        self.objects[self.nextObjectID] = Person(centroid, rect)
         self.disappeared[self.nextObjectID] = 0
         self.nextObjectID += 1
 
@@ -50,22 +82,31 @@ class CentroidTracker():
             return self.objects
 		# initialize an array of input centroids for the current frame
         inputCentroids = np.zeros((len(rects), 2), dtype="int")
+        box = []
+        
 		# loop over the bounding box rectangles
         for (i,rect) in enumerate(rects):
 			# use the bounding box coordinates to derive the centroid
+            box.append(rect[1])
             inputCentroids[i] = rect[2]
 		# if we are currently not tracking any objects take the input
 		# centroids and register each of them
         if len(self.objects) == 0:
             for i in range(0, len(inputCentroids)):
-                self.register(inputCentroids[i])
+                self.register(inputCentroids[i], box)
 		# otherwise, are are currently tracking objects so we need to
 		# try to match the input centroids to existing object
 		# centroids
         else:
             # grab the set of object IDs and corresponding centroids
             objectIDs = list(self.objects.keys())
-            objectCentroids = list(self.objects.values())
+            persons = list(self.objects.values())
+
+            objectCentroids = []
+
+            for person in persons:
+                objectCentroids.append(person.centroid)
+
             # compute the distance between each pair of object
             # centroids and input centroids, respectively -- our
             # goal will be to match an input centroid to an existing
@@ -98,7 +139,8 @@ class CentroidTracker():
                 # set its new centroid, and reset the disappeared
                 # counter
                 objectID = objectIDs[row]
-                self.objects[objectID] = inputCentroids[col]
+                self.objects[objectID].centroid = inputCentroids[col]
+                self.objects[objectID].rect = box[col]
                 self.disappeared[objectID] = 0
                 # indicate that we have examined each of the row and
                 # column indexes, respectively
@@ -129,6 +171,6 @@ class CentroidTracker():
             # register each new input centroid as a trackable object
             else:
                 for col in unusedCols:
-                    self.register(inputCentroids[col])
+                    self.register(inputCentroids[col], box[col])
         # return the set of trackable objects
         return self.objects
